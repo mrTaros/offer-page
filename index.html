@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Генератор офферов MetaRatings</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@9.1.1/build/index.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              purple: '#601DC0',
+              'purple-dark': '#330673',
+              green: '#20A94A',
+              dark: '#252525',
+              grey: '#5B5B5B',
+              'light-grey': '#F7F7F7',
+              border: '#E9E9E9',
+            }
+          },
+          fontFamily: {
+            oswald: ['Oswald', 'sans-serif'],
+            body: ['"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @media print { .no-print { display: none !important; } }
+
+    .offer-page {
+      width: 700px;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      color: #252525;
+      background: #601DC0;
+      padding: 0;
+    }
+    .offer-page h1, .offer-page h2, .offer-page h3 { font-family: 'Oswald', sans-serif; }
+
+    .offer-header {
+      background: #601DC0;
+      padding: 40px 40px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .offer-header h1 {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 42px;
+      font-style: normal;
+      color: #fff;
+      line-height: 1.1;
+    }
+
+    .offer-card {
+      background: #fff;
+      margin: 0 16px 16px;
+      border-radius: 20px;
+      padding: 36px 40px 40px;
+    }
+
+    .offer-section { margin-bottom: 24px; }
+    .offer-section-title {
+      font-family: 'Oswald', sans-serif;
+      font-weight: 600;
+      font-size: 16px;
+      color: #252525;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .offer-section-title .section-icon { width: 22px; height: 22px; flex-shrink: 0; object-fit: contain; }
+
+    .offer-greeting { font-size: 14px; line-height: 1.65; margin-bottom: 6px; }
+    .offer-role-inline { font-weight: 700; }
+
+    .offer-bullet-list { list-style: none; padding: 0; margin: 0; font-size: 13px; line-height: 1.7; }
+    .offer-bullet-list li { position: relative; padding-left: 14px; margin-bottom: 4px; }
+    .offer-bullet-list li::before { content: '·'; position: absolute; left: 0; top: 0; font-weight: 700; color: #252525; }
+
+    .offer-bullet-list li .cond-label { color: #5B5B5B; }
+    .offer-bullet-list li .cond-value { font-weight: 600; color: #252525; }
+    .offer-bullet-list li .metric-marker { color: #601DC0; font-weight: 700; }
+
+    .offer-bullet-list.benefits-list li { margin-bottom: 8px; }
+    .offer-bullet-list .benefit-title { font-weight: 700; }
+    .offer-bullet-list .benefit-desc { color: #5B5B5B; margin-left: 12px; display: block; }
+
+    .offer-footer {
+      background: #601DC0;
+      padding: 16px 40px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .offer-paragraph { font-size: 13px; line-height: 1.7; margin-bottom: 8px; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- ============ INPUT SCREEN ============ -->
+  <div id="inputScreen" class="max-w-3xl mx-auto py-10 px-4">
+    <div class="flex items-center gap-3 mb-8">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><rect width="32" height="32" rx="8" fill="#601DC0"/><text x="4" y="22" font-family="Oswald,sans-serif" font-weight="700" font-size="12" fill="#fff">MR</text></svg>
+      <h1 class="font-oswald text-2xl font-bold text-brand-dark">Генератор офферов</h1>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Текст оффера</label>
+      <textarea id="offerInput" rows="18" class="w-full border border-gray-300 rounded-xl p-4 text-sm font-body leading-relaxed focus:ring-2 focus:ring-brand-purple focus:border-brand-purple resize-y" placeholder="..., привет!
+... в роли - ...
+
+Условия взаимодействия:
+Формат: ...
+Вознаграждение: ...
+Местоположение: ...
+Режим вовлечённости: ...
+Координатор задач: ...
+Тестовый период: ...
+
+Ключевые цели роли:
+...
+
+Метрики успеха роли (опционально):
+...
+
+Зона ответственности:
+...
+
+Наши преимущества:
+...
+
+Почему Metaratings — это для тебя?
+...
+
+... действителен до ..."></textarea>
+
+      <div class="flex items-center gap-4 mt-4">
+        <label class="cursor-pointer inline-flex items-center gap-2 text-sm text-brand-purple hover:text-brand-purple-dark transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Загрузить PDF или DOCX файл
+          <input type="file" id="fileInput" accept=".txt,.pdf,.doc,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword" class="hidden">
+        </label>
+      </div>
+
+      <div id="sectionsChecklist" class="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+        <div class="text-sm font-medium text-gray-700 mb-3">Сверка пунктов оффера</div>
+        <ul id="sectionsChecklistList" class="space-y-2 text-sm text-gray-600">
+          <li class="text-gray-400">Вставьте текст или загрузите файл — здесь отобразятся найденные секции.</li>
+        </ul>
+      </div>
+    </div>
+
+    <details class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+      <summary class="cursor-pointer text-sm font-medium text-gray-700 select-none">Наши преимущества (редактируемый блок)</summary>
+      <textarea id="benefitsInput" rows="12" class="w-full border border-gray-300 rounded-xl p-4 text-sm font-body leading-relaxed focus:ring-2 focus:ring-brand-purple focus:border-brand-purple resize-y mt-4">28 рабочих дней оплачиваемого отсутствия в год
+
+Гибкий график и удалённая работа
+Можно работать из любой точки мира или переехать в наш офис в Сербии или Португалии - мы можем оказать помощь с документами
+
+Компенсация профессиональных курсов и тренингов
+Мы поддержим твоё развитие: выбирай программы, а мы их оплатим
+
+Корпоративные уроки английского языка
+Прокачай свои языковые навыки без затрат
+
+Дружелюбная и вовлечённая команда
+Работаем на результат, помогаем друг другу, растём вместе</textarea>
+    </details>
+
+    <div id="validationMsg" class="hidden bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800"></div>
+
+    <button id="generateBtn" onclick="generateOffer()" class="w-full bg-brand-purple hover:bg-brand-purple-dark text-white font-oswald font-semibold text-lg py-3.5 rounded-xl transition shadow-sm">
+      Сгенерировать оффер
+    </button>
+  </div>
+
+  <!-- ============ PREVIEW SCREEN ============ -->
+  <div id="previewScreen" class="hidden">
+    <div class="no-print sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200 py-3 px-4">
+      <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+        <button onclick="backToEdit()" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-brand-purple transition">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+          Назад к редактированию
+        </button>
+        <div class="flex gap-3">
+          <button onclick="downloadPDF()" class="inline-flex items-center gap-2 bg-brand-purple hover:bg-brand-purple-dark text-white text-sm font-medium py-2 px-5 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Скачать PDF
+          </button>
+          <button onclick="downloadDOCX()" class="inline-flex items-center gap-2 bg-white border border-brand-purple text-brand-purple hover:bg-brand-purple hover:text-white text-sm font-medium py-2 px-5 rounded-lg transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Скачать DOCX
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-center py-8 px-4">
+      <div id="offerPreview" class="offer-page shadow-xl overflow-hidden" style="border-radius:20px;"></div>
+    </div>
+  </div>
+
+<script>
+// ====================== PARSER ======================
+const DEFAULT_GREETING = 'Благодарим тебя за интерес к нашей команде и проделанный путь в рамках отбора. Мы рады предложить тебе сотрудничество в роли -';
+
+const SECTION_MARKERS = [
+  { key: 'conditions', pattern: /^условия\s+взаимодействия\s*:?\s*/i },
+  { key: 'goal', pattern: /^ключев(?:ая|ые)\s+цел[ьи]\s+роли\s*:?\s*/i },
+  { key: 'metrics', pattern: /^метрики\s+успеха\s+роли\s*:?\s*/i },
+  { key: 'responsibility', pattern: /^зона\s+ответственности\s*:?\s*/i },
+  { key: 'benefits_section', pattern: /^наши\s+преимущества\s*:?\s*/i },
+  { key: 'why', pattern: /^почему\s+metaratings\b.*$/i },
+];
+
+const CONDITION_FIELDS = [
+  { key: 'format', pattern: /^формат(?:\s|:|$)/i, label: 'Формат' },
+  { key: 'salary', pattern: /^вознаграждение(?:\s|:|$)/i, label: 'Вознаграждение' },
+  { key: 'location', pattern: /^местоположение(?:\s|:|$)/i, label: 'Местоположение' },
+  { key: 'schedule', pattern: /^режим\s+вовлеч[её]нности/i, label: 'Режим вовлечённости' },
+  { key: 'coordinator', pattern: /^координатор\s+задач/i, label: 'Координатор задач' },
+  { key: 'trial', pattern: /^тестовый\s+период/i, label: 'Тестовый период' },
+];
+
+const CHECKLIST_ITEMS = [
+  { key: 'name', label: 'Имя' },
+  { key: 'role', label: 'Роль (в роли ...)' },
+  { key: 'conditions', label: 'Условия взаимодействия' },
+  { key: 'cond_format', label: '  Формат' },
+  { key: 'cond_salary', label: '  Вознаграждение' },
+  { key: 'cond_location', label: '  Местоположение' },
+  { key: 'cond_schedule', label: '  Режим вовлечённости' },
+  { key: 'cond_coordinator', label: '  Координатор задач' },
+  { key: 'cond_trial', label: '  Тестовый период' },
+  { key: 'goal', label: 'Ключевые цели роли' },
+  { key: 'metrics', label: 'Метрики успеха роли (опционально)' },
+  { key: 'responsibility', label: 'Зона ответственности' },
+  { key: 'benefits_section', label: 'Наши преимущества' },
+  { key: 'validUntil', label: 'Оффер действителен до' },
+];
+
+const SECTION_REQUIRED = ['name', 'role', 'conditions', 'goal', 'responsibility', 'benefits_section', 'validUntil',
+  'cond_format', 'cond_salary', 'cond_location', 'cond_schedule', 'cond_coordinator', 'cond_trial'];
+
+function parseOfferText(text) {
+  const lines = text.split('\n');
+  const sections = {};
+  let currentKey = null;
+  let buffer = [];
+  const preambleLines = [];
+
+  for (const line of lines) {
+    let matched = false;
+    for (const marker of SECTION_MARKERS) {
+      if (marker.pattern.test(line.trim())) {
+        if (currentKey) {
+          sections[currentKey] = buffer.join('\n').trim();
+        }
+        currentKey = marker.key;
+        const afterColon = line.trim().replace(marker.pattern, '').trim();
+        buffer = afterColon ? [afterColon] : [];
+        matched = true;
+        break;
+      }
+    }
+    if (!matched && currentKey) {
+      buffer.push(line);
+    }
+    if (!matched && !currentKey) {
+      preambleLines.push(line);
+    }
+  }
+  if (currentKey) {
+    sections[currentKey] = buffer.join('\n').trim();
+  }
+
+  inferNameAndRole(sections, text);
+  inferGreeting(sections, preambleLines);
+  inferValidUntil(sections, text);
+  parseConditionFields(sections);
+
+  return sections;
+}
+
+function inferNameAndRole(sections, text) {
+  var allText = text || '';
+
+  if (!sections.name) {
+    var nameMatch = allText.match(/([А-ЯЁA-Z][а-яёa-z]+)[,\s]+привет/m);
+    if (nameMatch) {
+      sections.name = nameMatch[1];
+    }
+  }
+
+  if (!sections.role) {
+    var roleMatch = allText.match(/в\s+роли\s*[-–—]?\s*\n*(.+)/i);
+    if (roleMatch) {
+      var roleLine = roleMatch[1].trim().replace(/[.!]$/, '').trim();
+      if (roleLine.length > 0 && roleLine.length < 120) {
+        sections.role = roleLine;
+      }
+    }
+  }
+
+  if (!sections.role) {
+    var roleMatch2 = allText.match(/(?:^|\n)\s*([\wА-ЯЁа-яё /()-]+(?:специалист|менеджер|инженер|разработчик|аналитик|дизайнер|директор|руководитель|координатор|эксперт|lead|manager|developer|engineer|head)[\wА-ЯЁа-яё /()-]*)\s*\n\s*условия/im);
+    if (roleMatch2) {
+      sections.role = roleMatch2[1].trim();
+    }
+  }
+}
+
+function inferGreeting(sections, preambleLines) {
+  if (sections.greeting) return;
+
+  const preamble = preambleLines.join('\n').trim();
+  if (!preamble) return;
+
+  const namePattern = sections.name
+    ? new RegExp('^' + sections.name + '[,\\s]+привет[!.]?\\s*$', 'i')
+    : /^[А-ЯЁA-Z][а-яёa-z]+[,\s]+привет[!.]?\s*$/;
+
+  const meaningful = preambleLines
+    .filter(l => l.trim() && !namePattern.test(l.trim()))
+    .map(l => l.trim());
+
+  if (meaningful.length > 0) {
+    let text = meaningful.join('\n');
+    if (sections.role) {
+      text = text.replace(new RegExp('\\s*в\\s+роли\\s*[-–—]?\\s*' + sections.role.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$', 'i'), '');
+    }
+    sections.greeting = text.trim() || null;
+  }
+}
+
+function inferValidUntil(sections, text) {
+  if (sections.validUntil) return;
+  var match = (text || '').match(/действителен\s+до\s*:?\s*(\d{1,2}[.\-/]\d{1,2}[.\-/]\d{2,4})/i);
+  if (match) {
+    sections.validUntil = match[1];
+    return;
+  }
+  var matchLoose = (text || '').match(/действителен\s+до\s*:?\s*(.{3,20})/i);
+  if (matchLoose) {
+    sections.validUntil = matchLoose[1].replace(/[\n\r]+.*/, '').trim();
+  }
+}
+
+function parseConditionFields(sections) {
+  if (!sections.conditions) return;
+  var lines = sections.conditions.split('\n');
+  for (var cf of CONDITION_FIELDS) {
+    for (var line of lines) {
+      if (cf.pattern.test(line.trim())) {
+        sections['cond_' + cf.key] = true;
+        break;
+      }
+    }
+  }
+}
+
+function parseConditions(text) {
+  if (!text) return [];
+  const pairs = [];
+  const lines = text.split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx > 0 && colonIdx < 50) {
+      pairs.push({
+        key: line.substring(0, colonIdx).trim(),
+        value: line.substring(colonIdx + 1).trim(),
+      });
+    } else {
+      if (pairs.length > 0) {
+        pairs[pairs.length - 1].value += ' ' + line.trim();
+      }
+    }
+  }
+  return pairs;
+}
+
+function parseListItems(text) {
+  if (!text) return [];
+  return text.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+}
+
+function parseMetrics(text) {
+  if (!text) return [];
+  const items = [];
+  const lines = text.split('\n').filter(l => l.trim());
+  let current = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const markerMatch = trimmed.match(/^(≥|>=|>)\s*/);
+    if (markerMatch) {
+      if (current) items.push(current);
+      current = { marker: '≥', text: trimmed.replace(/^(≥|>=|>)\s*/, '').trim() };
+    } else if (current) {
+      current.text += ' ' + trimmed;
+    } else {
+      items.push({ marker: '', text: trimmed });
+    }
+  }
+  if (current) items.push(current);
+  return items;
+}
+
+function parseBenefits(text) {
+  if (!text) return [];
+  const blocks = text.split('\n\n').filter(b => b.trim());
+  return blocks.map(block => {
+    const lines = block.split('\n').filter(l => l.trim());
+    return {
+      title: lines[0] || '',
+      description: lines.slice(1).join(' ').trim(),
+    };
+  });
+}
+
+
+// ====================== VALIDATION ======================
+function validateSections(sections) {
+  const missing = SECTION_REQUIRED.filter(key => !sections[key]);
+  const missingLabels = missing.map(key => {
+    var item = CHECKLIST_ITEMS.find(c => c.key === key);
+    return item ? item.label.trim() : key;
+  });
+  const warnings = [];
+  if (!sections.metrics) warnings.push('Секция «Метрики успеха роли» не найдена — блок будет пропущен (опционально).');
+
+  return {
+    missing: missingLabels.map(label => ({ label })),
+    warnings,
+  };
+}
+
+
+// ====================== CHECKLIST (сверка пунктов) ======================
+function updateSectionsChecklist(text) {
+  const listEl = document.getElementById('sectionsChecklistList');
+  if (!listEl) return;
+
+  const trimmed = (text || '').trim();
+  if (!trimmed) {
+    listEl.innerHTML = '<li class="text-gray-400">Вставьте текст или загрузите файл — здесь отобразятся найденные секции.</li>';
+    return;
+  }
+
+  const sections = parseOfferText(trimmed);
+
+  listEl.innerHTML = CHECKLIST_ITEMS.map(item => {
+    const val = sections[item.key];
+    const hasValue = !!(val && (typeof val === 'string' ? val.trim() : val));
+    const required = SECTION_REQUIRED.includes(item.key);
+    const isSubfield = item.label.startsWith('  ');
+    const icon = hasValue
+      ? '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600" title="Найдено">✓</span>'
+      : '<span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-100 text-red-600" title="Не найдено">—</span>';
+    const reqTag = required && !hasValue ? ' <span class="text-red-600 font-medium">(обязательно)</span>' : '';
+    const indent = isSubfield ? 'ml-5' : '';
+    return `<li class="flex items-center gap-2 ${indent}">${icon} <span class="${hasValue ? 'text-gray-800' : 'text-gray-500'}">${escapeHtml(item.label.trim())}</span>${reqTag}</li>`;
+  }).join('');
+}
+
+
+// ====================== RENDER ======================
+function renderOffer(sections, benefitsText) {
+  const name = sections.name || 'Кандидат';
+  const role = sections.role || 'Должность';
+  const greeting = sections.greeting || DEFAULT_GREETING;
+  const conditions = parseConditions(sections.conditions);
+  const goalText = sections.goal || '';
+  const metrics = parseMetrics(sections.metrics);
+  const responsibilities = parseListItems(sections.responsibility);
+  const whyText = sections.why || '';
+  const validUntil = sections.validUntil || '';
+  const benefits = parseBenefits(benefitsText);
+
+  const conditionsHTML = conditions.length > 0
+    ? `<ul class="offer-bullet-list">${conditions.map(c =>
+        `<li><span class="cond-label">${escapeHtml(c.key)}:</span> <span class="cond-value">${escapeHtml(c.value)}</span></li>`
+      ).join('')}</ul>`
+    : '';
+
+  const goalItems = goalText ? parseListItems(goalText) : [];
+  const goalHTML = goalItems.length > 1
+    ? `<ul class="offer-bullet-list">${goalItems.map(g => `<li>${escapeHtml(g)}</li>`).join('')}</ul>`
+    : (goalText ? `<p class="offer-paragraph">${escapeHtml(goalText)}</p>` : '');
+
+  const metricsHTML = metrics.length > 0
+    ? `<ul class="offer-bullet-list">${metrics.map(m =>
+        `<li>${m.marker ? `<span class="metric-marker">${m.marker} </span>` : ''}${escapeHtml(m.text)}</li>`
+      ).join('')}</ul>`
+    : '';
+
+  const responsibilityHTML = responsibilities.length > 0
+    ? `<ul class="offer-bullet-list">${responsibilities.map(r =>
+        `<li>${escapeHtml(r)}</li>`
+      ).join('')}</ul>`
+    : '';
+
+  const benefitsHTML = benefits.length > 0
+    ? `<ul class="offer-bullet-list benefits-list">${benefits.map(b =>
+        `<li><span class="benefit-title">${escapeHtml(b.title)}</span>${b.description ? `<span class="benefit-desc">${escapeHtml(b.description)}</span>` : ''}</li>`
+      ).join('')}</ul>`
+    : '';
+
+  const whyHTML = whyText ? whyText.split('\n').filter(l => l.trim()).map(l =>
+    `<p class="offer-paragraph">${escapeHtml(l.trim())}</p>`
+  ).join('') : '';
+
+  const greetingParts = greeting.replace(/\s*[-–—]\s*$/, '').trim();
+  const roleDisplay = role !== 'Должность' ? ` -\n<span class="offer-role-inline">${escapeHtml(role)}</span>` : '';
+  return `
+    <div class="offer-header">
+      <h1>Welcome on board!</h1>
+      <img src="assets/logo.png" alt="MetaRatings" style="height:28px;">
+    </div>
+    <div class="offer-card">
+      <div class="offer-section">
+        <p class="offer-greeting"><strong>${escapeHtml(name)}, привет!</strong></p>
+        <p class="offer-greeting">${escapeHtml(greetingParts)}${roleDisplay}</p>
+      </div>
+
+      ${conditions.length > 0 ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-conditions.png" class="section-icon" alt="">
+          Условия взаимодействия:
+        </div>
+        ${conditionsHTML}
+      </div>` : ''}
+
+      ${goalHTML ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-section.png" class="section-icon" alt="">
+          Ключевые цели роли:
+        </div>
+        ${goalHTML}
+      </div>` : ''}
+
+      ${metrics.length > 0 ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-section.png" class="section-icon" alt="">
+          Метрики успеха роли:
+        </div>
+        ${metricsHTML}
+      </div>` : ''}
+
+      ${responsibilities.length > 0 ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-section.png" class="section-icon" alt="">
+          Зона ответственности:
+        </div>
+        ${responsibilityHTML}
+      </div>` : ''}
+
+      ${benefitsHTML ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-section.png" class="section-icon" alt="">
+          Наши преимущества:
+        </div>
+        ${benefitsHTML}
+      </div>` : ''}
+
+      ${whyHTML ? `
+      <div class="offer-section">
+        <div class="offer-section-title">
+          <img src="assets/icon-section.png" class="section-icon" alt="">
+          Почему Metaratings — это для тебя?
+        </div>
+        ${whyHTML}
+      </div>` : ''}
+    </div>
+
+    <div class="offer-footer">
+      <span>${validUntil ? `Обращаем твое внимание, что оффер действителен до ${escapeHtml(validUntil)}` : ''}</span>
+      <img src="assets/logo.png" alt="MetaRatings" style="height:22px;">
+    </div>
+  `;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+
+// ====================== ACTIONS ======================
+let currentSections = {};
+
+function generateOffer() {
+  const text = document.getElementById('offerInput').value;
+  if (!text.trim()) {
+    showValidation(['Вставьте текст оффера.'], []);
+    return;
+  }
+
+  const sections = parseOfferText(text);
+  currentSections = sections;
+  const { missing, warnings } = validateSections(sections);
+
+  if (missing.length > 0) {
+    showValidation(
+      missing.map(m => `Не найдена обязательная секция: «${m.label}»`),
+      warnings
+    );
+    return;
+  }
+
+  hideValidation();
+
+  const benefitsText = document.getElementById('benefitsInput').value;
+  const html = renderOffer(sections, benefitsText);
+  document.getElementById('offerPreview').innerHTML = html;
+  document.getElementById('inputScreen').classList.add('hidden');
+  document.getElementById('previewScreen').classList.remove('hidden');
+}
+
+function backToEdit() {
+  document.getElementById('previewScreen').classList.add('hidden');
+  document.getElementById('inputScreen').classList.remove('hidden');
+}
+
+function showValidation(errors, warnings) {
+  const el = document.getElementById('validationMsg');
+  let html = '';
+  if (errors.length) html += errors.map(e => `<div class="text-red-700 font-medium">⚠ ${e}</div>`).join('');
+  if (warnings.length) html += warnings.map(w => `<div class="text-amber-700 mt-1">${w}</div>`).join('');
+  el.innerHTML = html;
+  el.classList.remove('hidden');
+}
+
+function hideValidation() {
+  document.getElementById('validationMsg').classList.add('hidden');
+}
+
+
+// ====================== CHECKLIST: обновление при вводе и загрузке ======================
+let checklistDebounceTimer = null;
+document.getElementById('offerInput').addEventListener('input', function() {
+  clearTimeout(checklistDebounceTimer);
+  checklistDebounceTimer = setTimeout(function() {
+    updateSectionsChecklist(document.getElementById('offerInput').value);
+  }, 300);
+});
+
+// ====================== FILE UPLOAD ======================
+function setOfferTextAndChecklist(text) {
+  document.getElementById('offerInput').value = text;
+  updateSectionsChecklist(text);
+}
+
+function extractTextFromPdf(arrayBuffer) {
+  if (typeof pdfjsLib === 'undefined') return Promise.reject(new Error('PDF.js не загружен'));
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function(pdf) {
+    var parts = [];
+    var numPages = pdf.numPages;
+    function next(pageNum) {
+      if (pageNum > numPages) return Promise.resolve(parts.join('\n\n'));
+      return pdf.getPage(pageNum).then(function(page) {
+        return page.getTextContent().then(function(content) {
+          var pageText = content.items.map(function(item) { return item.str; }).join(' ');
+          parts.push(pageText);
+          return next(pageNum + 1);
+        });
+      });
+    }
+    return next(1);
+  });
+}
+
+function extractTextFromDocx(arrayBuffer) {
+  if (typeof mammoth === 'undefined') return Promise.reject(new Error('Mammoth не загружен'));
+  return mammoth.extractRawText({ arrayBuffer: arrayBuffer }).then(function(result) {
+    return result.value;
+  });
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const name = (file.name || '').toLowerCase();
+  const isTxt = name.endsWith('.txt');
+  const isPdf = name.endsWith('.pdf');
+  const isDocx = name.endsWith('.docx') || name.endsWith('.doc');
+
+  if (isTxt) {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      setOfferTextAndChecklist(ev.target.result);
+    };
+    reader.readAsText(file, 'UTF-8');
+    return;
+  }
+
+  if (isPdf || isDocx) {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const arrayBuffer = ev.target.result;
+      const promise = isPdf ? extractTextFromPdf(arrayBuffer) : extractTextFromDocx(arrayBuffer);
+      promise.then(function(text) {
+        setOfferTextAndChecklist(text);
+      }).catch(function(err) {
+        console.error(err);
+        alert('Не удалось прочитать файл: ' + (err.message || 'неизвестная ошибка'));
+      });
+    };
+    reader.readAsArrayBuffer(file);
+    return;
+  }
+
+  alert('Поддерживаются только файлы .txt, .pdf, .doc или .docx');
+});
+
+
+// ====================== PDF EXPORT ======================
+function downloadPDF() {
+  const element = document.getElementById('offerPreview');
+  const name = currentSections.name || 'Кандидат';
+  const filename = `Оффер ${name}.pdf`;
+
+  const opt = {
+    margin: 0,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+  };
+
+  html2pdf().set(opt).from(element).save();
+}
+
+
+// ====================== DOCX EXPORT ======================
+function downloadDOCX() {
+  try {
+    const { Document, Packer, Paragraph, TextRun } = docx;
+
+    const name = currentSections.name || 'Кандидат';
+    const role = currentSections.role || 'Должность';
+    const greeting = currentSections.greeting || DEFAULT_GREETING;
+    const conditions = parseConditions(currentSections.conditions);
+    const goalText = currentSections.goal || '';
+    const metrics = parseMetrics(currentSections.metrics);
+    const responsibilities = parseListItems(currentSections.responsibility);
+    const whyText = currentSections.why || '';
+    const validUntil = currentSections.validUntil || '';
+    const benefitsText = document.getElementById('benefitsInput').value;
+    const benefits = parseBenefits(benefitsText);
+
+    const PURPLE = '601DC0';
+    const DARK = '252525';
+    const GREY = '5B5B5B';
+
+    const children = [];
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: 'Welcome on board!', bold: true, font: 'Oswald', size: 56, color: PURPLE })],
+      spacing: { after: 400 },
+    }));
+
+    children.push(new Paragraph({
+      children: [
+        new TextRun({ text: `${name}, `, bold: true, font: 'Helvetica Neue', size: 24, color: DARK }),
+        new TextRun({ text: 'привет!', font: 'Helvetica Neue', size: 24, color: DARK }),
+      ],
+      spacing: { after: 100 },
+    }));
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: greeting, font: 'Helvetica Neue', size: 24, color: DARK })],
+      spacing: { after: 100 },
+    }));
+
+    children.push(new Paragraph({
+      children: [new TextRun({ text: role, bold: true, font: 'Oswald', size: 44, color: PURPLE })],
+      spacing: { after: 300 },
+    }));
+
+    if (conditions.length > 0) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Условия взаимодействия:', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      for (const c of conditions) {
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: `${c.key}: `, font: 'Helvetica Neue', size: 22, color: GREY }),
+            new TextRun({ text: c.value, font: 'Helvetica Neue', size: 22, color: DARK }),
+          ],
+          spacing: { after: 40 },
+        }));
+      }
+    }
+
+    if (goalText) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Ключевая цель роли:', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      children.push(new Paragraph({
+        children: [new TextRun({ text: goalText, font: 'Helvetica Neue', size: 22, color: DARK })],
+        spacing: { after: 100 },
+      }));
+    }
+
+    if (metrics.length > 0) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Метрики успеха роли:', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      for (const m of metrics) {
+        const prefix = m.marker ? `${m.marker} ` : '• ';
+        children.push(new Paragraph({
+          children: [
+            new TextRun({ text: prefix, bold: true, font: 'Helvetica Neue', size: 22, color: PURPLE }),
+            new TextRun({ text: m.text, font: 'Helvetica Neue', size: 22, color: DARK }),
+          ],
+          spacing: { after: 60 },
+        }));
+      }
+    }
+
+    if (responsibilities.length > 0) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Зона ответственности:', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      for (const r of responsibilities) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: `• ${r}`, font: 'Helvetica Neue', size: 22, color: DARK })],
+          spacing: { after: 40 },
+        }));
+      }
+    }
+
+    if (benefits.length > 0) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Наши преимущества:', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      for (const b of benefits) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: b.title, bold: true, font: 'Helvetica Neue', size: 22, color: DARK })],
+          spacing: { after: 20 },
+        }));
+        if (b.description) {
+          children.push(new Paragraph({
+            children: [new TextRun({ text: b.description, font: 'Helvetica Neue', size: 22, color: GREY })],
+            spacing: { after: 80 },
+          }));
+        }
+      }
+    }
+
+    if (whyText) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: 'Почему Metaratings — это для тебя?', bold: true, font: 'Oswald', size: 28, color: DARK })],
+        spacing: { before: 200, after: 100 },
+      }));
+      for (const line of whyText.split('\n').filter(l => l.trim())) {
+        children.push(new Paragraph({
+          children: [new TextRun({ text: line.trim(), font: 'Helvetica Neue', size: 22, color: DARK })],
+          spacing: { after: 60 },
+        }));
+      }
+    }
+
+    if (validUntil) {
+      children.push(new Paragraph({
+        children: [new TextRun({ text: `Обращаем твое внимание, что оффер действителен до ${validUntil}`, font: 'Helvetica Neue', size: 18, color: GREY, italics: true })],
+        spacing: { before: 300 },
+      }));
+    }
+
+    const doc = new Document({
+      sections: [{
+        properties: {
+          page: {
+            margin: { top: 720, bottom: 720, left: 900, right: 900 },
+          },
+        },
+        children: children,
+      }],
+    });
+
+    Packer.toBlob(doc).then(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Оффер ${name}.docx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  } catch (err) {
+    console.error('DOCX generation error:', err);
+    alert('Ошибка при генерации DOCX. Проверьте консоль браузера.');
+  }
+}
+</script>
+</body>
+</html>
