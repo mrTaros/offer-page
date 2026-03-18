@@ -759,9 +759,21 @@ function downloadPDF() {
 
 
 // ====================== DOCX EXPORT ======================
+const DEFAULT_GREETING = 'Благодарим тебя за интерес к нашей команде и проделанный путь в рамках отбора. Мы рады предложить тебе сотрудничество в роли -';
+
 function downloadDOCX() {
   try {
+    if (typeof docx === 'undefined') {
+      alert('Библиотека docx.js не загрузилась. Попробуйте обновить страницу.');
+      return;
+    }
+
     const { Document, Packer, Paragraph, TextRun } = docx;
+    if (!Document || !Packer || !Paragraph || !TextRun) {
+      console.error('docx classes missing:', { Document, Packer, Paragraph, TextRun });
+      alert('Ошибка: не все компоненты docx.js загружены. Проверьте консоль.');
+      return;
+    }
 
     const name = currentSections.name || 'Кандидат';
     const role = currentSections.role || 'Должность';
