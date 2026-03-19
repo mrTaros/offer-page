@@ -677,18 +677,29 @@ document.getElementById('offerInput').addEventListener('input', function() {
 
 // ====================== FILE UPLOAD ======================
 function setOfferTextAndChecklist(text) {
+  console.log('setOfferTextAndChecklist called, text length:', text.length);
   document.getElementById('offerInput').value = text;
   updateSectionsChecklist(text);
+  console.log('Offer text set and checklist updated');
 }
 
 function extractTextFromPdf(arrayBuffer) {
-  if (typeof pdfjsLib === 'undefined') return Promise.reject(new Error('PDF.js не загружен'));
+  console.log('extractTextFromPdf called, arrayBuffer size:', arrayBuffer.byteLength);
+  if (typeof pdfjsLib === 'undefined') {
+    console.error('PDF.js library not loaded');
+    return Promise.reject(new Error('PDF.js не загружен'));
+  }
+  console.log('PDF.js library available');
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   return pdfjsLib.getDocument({ data: arrayBuffer }).promise.then(function(pdf) {
+    console.log('PDF loaded, pages:', pdf.numPages);
     var parts = [];
     var numPages = pdf.numPages;
     function next(pageNum) {
-      if (pageNum > numPages) return Promise.resolve(parts.join('\n\n'));
+      if (pageNum > numPages) {
+        console.log('All PDF pages processed');
+        return Promise.resolve(parts.join('\n\n'));
+      }
       return pdf.getPage(pageNum).then(function(page) {
         return page.getTextContent().then(function(content) {
           var pageText = content.items.map(function(item) { return item.str; }).join(' ');
@@ -698,49 +709,80 @@ function extractTextFromPdf(arrayBuffer) {
       });
     }
     return next(1);
+  }).catch(function(err) {
+    console.error('Error in extractTextFromPdf:', err);
+    throw err;
   });
 }
 
 function extractTextFromDocx(arrayBuffer) {
-  if (typeof mammoth === 'undefined') return Promise.reject(new Error('Mammoth не загружен'));
+  console.log('extractTextFromDocx called, arrayBuffer size:', arrayBuffer.byteLength);
+  if (typeof mammoth === 'undefined') {
+    console.error('Mammoth library not loaded');
+    return Promise.reject(new Error('Mammoth не загружен'));
+  }
+  console.log('Mammoth library available');
   return mammoth.extractRawText({ arrayBuffer: arrayBuffer }).then(function(result) {
+    console.log('DOCX text extracted, length:', result.value.length);
     return result.value;
+  }).catch(function(err) {
+    console.error('Error in extractTextFromDocx:', err);
+    throw err;
   });
 }
 
 document.getElementById('fileInput').addEventListener('change', function(e) {
+  console.log('File input change event triggered');
   const file = e.target.files[0];
-  if (!file) return;
+  if (!file) {
+    console.log('No file selected');
+    return;
+  }
+  console.log('File selected:', file.name, 'Type:', file.type, 'Size:', file.size);
   const name = (file.name || '').toLowerCase();
   const isTxt = name.endsWith('.txt');
   const isPdf = name.endsWith('.pdf');
   const isDocx = name.endsWith('.docx') || name.endsWith('.doc');
 
   if (isTxt) {
+    console.log('Processing as TXT file');
     const reader = new FileReader();
     reader.onload = function(ev) {
+      console.log('TXT file read successfully, length:', ev.target.result.length);
       setOfferTextAndChecklist(ev.target.result);
+    };
+    reader.onerror = function(err) {
+      console.error('Error reading TXT file:', err);
+      alert('Ошибка чтения файла');
     };
     reader.readAsText(file, 'UTF-8');
     return;
   }
 
   if (isPdf || isDocx) {
+    console.log('Processing as', isPdf ? 'PDF' : 'DOCX', 'file');
     const reader = new FileReader();
     reader.onload = function(ev) {
+      console.log('File read as ArrayBuffer, size:', ev.target.result.byteLength);
       const arrayBuffer = ev.target.result;
       const promise = isPdf ? extractTextFromPdf(arrayBuffer) : extractTextFromDocx(arrayBuffer);
       promise.then(function(text) {
+        console.log('Text extracted successfully, length:', text.length);
         setOfferTextAndChecklist(text);
       }).catch(function(err) {
-        console.error(err);
+        console.error('Error extracting text:', err);
         alert('Не удалось прочитать файл: ' + (err.message || 'неизвестная ошибка'));
       });
+    };
+    reader.onerror = function(err) {
+      console.error('Error reading file as ArrayBuffer:', err);
+      alert('Ошибка чтения файла');
     };
     reader.readAsArrayBuffer(file);
     return;
   }
 
+  console.log('Unsupported file type');
   alert('Поддерживаются только файлы .txt, .pdf, .doc или .docx');
 });
 
