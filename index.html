@@ -625,11 +625,16 @@ function generateOffer() {
   const { missing, warnings } = validateSections(sections);
 
   if (missing.length > 0) {
+    console.warn('Validation failed - missing required sections:', missing);
     showValidation(
       missing.map(m => `Не найдена обязательная секция: «${m.label}»`),
       warnings
     );
     return;
+  }
+
+  if (warnings.length > 0) {
+    console.info('Warnings (non-blocking):', warnings);
   }
 
   hideValidation();
@@ -653,6 +658,7 @@ function showValidation(errors, warnings) {
   if (warnings.length) html += warnings.map(w => `<div class="text-amber-700 mt-1">${w}</div>`).join('');
   el.innerHTML = html;
   el.classList.remove('hidden');
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function hideValidation() {
