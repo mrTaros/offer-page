@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
-  <script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
   <script>
@@ -807,8 +807,6 @@ function downloadPDF() {
 
 
 // ====================== DOCX EXPORT ======================
-const DEFAULT_GREETING = 'Благодарим тебя за интерес к нашей команде и проделанный путь в рамках отбора. Мы рады предложить тебе сотрудничество в роли -';
-
 function downloadDOCX() {
   try {
     if (typeof docx === 'undefined') {
