@@ -49,18 +49,24 @@
 
     .offer-header {
       background: #601DC0;
-      padding: 40px 40px 28px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
+      padding: 30px 30px 28px;
+      position: relative;
+      min-height: 90px;
     }
     .offer-header h1 {
       font-family: 'Oswald', sans-serif;
       font-weight: 700;
-      font-size: 42px;
-      font-style: normal;
+      font-size: 48px;
       color: #fff;
       line-height: 1.1;
+    }
+    .offer-header .header-logo {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      width: 110px;
+      height: 40px;
+      object-fit: contain;
     }
 
     .offer-card {
@@ -91,7 +97,7 @@
     .offer-bullet-list li::before { content: '·'; position: absolute; left: 0; top: 0; font-weight: 700; color: #252525; }
 
     .offer-bullet-list li .cond-label { color: #5B5B5B; }
-    .offer-bullet-list li .cond-value { font-weight: 600; color: #252525; }
+    .offer-bullet-list li .cond-value { font-weight: 400; color: #252525; }
     .offer-bullet-list li .metric-marker { color: #601DC0; font-weight: 700; }
 
     .offer-bullet-list.benefits-list li { margin-bottom: 8px; }
@@ -100,15 +106,27 @@
 
     .offer-footer {
       background: #601DC0;
-      padding: 16px 40px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      padding: 20px 30px 30px;
+      position: relative;
+      min-height: 80px;
       font-size: 11px;
       color: rgba(255,255,255,0.7);
     }
+    .offer-footer .footer-logo {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      width: 110px;
+      height: 40px;
+      object-fit: contain;
+    }
 
     .offer-paragraph { font-size: 13px; line-height: 1.7; margin-bottom: 8px; }
+    .offer-paragraph.why-paragraph { margin-bottom: 22px; }
+    .offer-paragraph.why-paragraph:last-child { margin-bottom: 0; }
+
+    .offer-section { page-break-inside: avoid; }
+    .offer-card { page-break-inside: auto; }
   </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -524,16 +542,17 @@ function renderOffer(sections, benefitsText) {
       ).join('')}</ul>`
     : '';
 
-  const whyHTML = whyText ? whyText.split('\n').filter(l => l.trim()).map(l =>
-    `<p class="offer-paragraph">${escapeHtml(l.trim())}</p>`
-  ).join('') : '';
+  const whyHTML = whyText ? whyText.split('\n\n').filter(b => b.trim()).map(block => {
+    const text = block.split('\n').filter(l => l.trim()).map(l => l.trim()).join(' ');
+    return `<p class="offer-paragraph why-paragraph">${escapeHtml(text)}</p>`;
+  }).join('') : '';
 
   const greetingParts = greeting.replace(/\s*[-–—]\s*$/, '').trim();
   const roleDisplay = role !== 'Должность' ? ` -\n<span class="offer-role-inline">${escapeHtml(role)}</span>` : '';
   return `
     <div class="offer-header">
       <h1>Welcome on board!</h1>
-      <img src="assets/logo.png" alt="MetaRatings" style="height:28px;">
+      <img src="assets/logo.png" class="header-logo" alt="MetaRatings">
     </div>
     <div class="offer-card">
       <div class="offer-section">
@@ -598,7 +617,7 @@ function renderOffer(sections, benefitsText) {
 
     <div class="offer-footer">
       <span>${validUntil ? `Обращаем твое внимание, что оффер действителен до ${escapeHtml(validUntil)}` : ''}</span>
-      <img src="assets/logo.png" alt="MetaRatings" style="height:22px;">
+      <img src="assets/logo.png" class="footer-logo" alt="MetaRatings">
     </div>
   `;
 }
@@ -794,7 +813,7 @@ function downloadPDF() {
   const filename = `Оффер ${name}.pdf`;
 
   const opt = {
-    margin: 0,
+    margin: [5, 0, 5, 0],
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
